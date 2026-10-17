@@ -1,0 +1,418 @@
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@rendermode InteractiveServer
+@page "/tasks"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@using TaskTrack.Data
+@using TaskTrack.Models
+@inject ApplicationDbContext Db
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>My Tasks - TaskTrack</PageTitle>
+
+<div class="tasks-page">
+    <div class="page-heading">
+        <div>
+            <p class="eyebrow">YOUR PERSONAL WORKSPACE</p>
+            <h1>My Tasks</h1>
+            <p class="subtitle">Plan your day. Focus on what matters.</p>
+        </div>
+        <button class="primary-button" @onclick="StartNewTask">
+            + New Task
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="notice" role="status">@message</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="error-notice" role="alert">@errorMessage</div>
+    }
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span>Total tasks</span>
+            <strong>@tasks.Count</strong>
+        </div>
+        <div class="stat-card">
+            <span>In progress</span>
+            <strong>@tasks.Count(t => !t.IsCompleted)</strong>
+        </div>
+        <div class="stat-card">
+            <span>Completed</span>
+            <strong>@tasks.Count(t => t.IsCompleted)</strong>
+        </div>
+    </div>
+
+    @if (showForm)
+    {
+        <section class="task-form-card">
+            <h2>@(editingId.HasValue ? "Edit task" : "Create a new task")</h2>
+
+            <EditForm Model="formModel" OnValidSubmit="SaveTask">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="form-field">
+                    <label for="taskTitle">Task title *</label>
+                    <InputText id="taskTitle" class="form-control" @bind-Value="formModel.Title" maxlength="100" />
+                    <ValidationMessage For="@(() => formModel.Title)" />
+                </div>
+
+                <div class="form-field">
+                    <label for="taskDescription">Description</label>
+                    <InputTextArea id="taskDescription" class="form-control" @bind-Value="formModel.Description"
+                                   maxlength="500" />
+                    <ValidationMessage For="@(() => formModel.Description)" />
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="taskPriority">Priority</label>
+                        <InputSelect id="taskPriority" class="form-control" @bind-Value="formModel.Priority">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </InputSelect>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="taskDueDate">Due date</label>
+                        <InputDate id="taskDueDate" class="form-control" @bind-Value="formModel.DueDate" />
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="primary-button">
+                        @(editingId.HasValue ? "Save Changes" : "Create Task")
+                    </button>
+                    <button type="button" class="secondary-button" @onclick="CancelForm">
+                        Cancel
+                    </button>
+                </div>
+            </EditForm>
+        </section>
+    }
+
+    <section class="task-list-section">
+        <div class="list-heading">
+            <div>
+                <h2>Your task list</h2>
+                <p class="subtitle">@FilteredTasks.Count() tasks shown</p>
+            </div>
+
+            <div class="filters">
+                <label for="statusFilter" class="visually-hidden">Filter by status</label>
+                <select id="statusFilter" class="filter-control" @bind="statusFilter">
+                    <option value="All">All statuses</option>
+                    <option value="Active">In progress</option>
+                    <option value="Completed">Completed</option>
+                </select>
+
+                <label for="priorityFilter" class="visually-hidden">Filter by priority</label>
+                <select id="priorityFilter" class="filter-control" @bind="priorityFilter">
+                    <option value="All">All priorities</option>
+                    <option value="High">High priority</option>
+                    <option value="Medium">Medium priority</option>
+                    <option value="Low">Low priority</option>
+                </select>
+            </div>
+        </div>
+
+        @if (loading)
+        {
+            <p>Loading your tasks...</p>
+        }
+        else if (!FilteredTasks.Any())
+        {
+            <div class="empty-state">
+                <h3>No tasks found</h3>
+                <p>Create a task or change your filters to see your tasks here.</p>
+                <button class="primary-button" @onclick="StartNewTask">
+                    Create your first task
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="task-list">
+                @foreach (var task in FilteredTasks)
+                {
+                    <article class="task-card" @key="task.Id">
+                        <div class="task-check">
+                            <input type="checkbox" id="@($"complete-{task.Id}")" checked="@task.IsCompleted"
+                                   aria-label="@($"Mark {task.Title} as completed")"
+                                   @onchange="(e) => ToggleComplete(task.Id, e)" />
+                        </div>
+
+                        <div class="task-content">
+                            <h3 class="@(task.IsCompleted ? "completed-title" : "")">
+                                @task.Title
+                            </h3>
+
+                            @if (!string.IsNullOrWhiteSpace(task.Description))
+                            {
+                                <p>@task.Description</p>
+                            }
+
+                            <div class="task-meta">
+                                <span class="priority priority-@task.Priority.ToLowerInvariant()">
+                                    @task.Priority priority
+                                </span>
+
+                                <span class="status-text">
+                                    @(task.IsCompleted ? "Completed" : "In progress")
+                                </span>
+
+                                @if (task.DueDate.HasValue)
+                                {
+                                    <span class="due-date">
+                                        Due @task.DueDate.Value.ToString("dd MMM yyyy")
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="task-actions">
+                            <button class="action-button" @onclick="() => StartEdit(task.Id)">
+                                Edit
+                            </button>
+                            <button class="action-button delete-button" @onclick="() => DeleteTask(task.Id)">
+                                Delete
+                            </button>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private List<TaskItem> tasks = new();
+    private TaskItem formModel = new();
+    private string userId = string.Empty;
+    private string statusFilter = "All";
+    private string priorityFilter = "All";
+    private string message = string.Empty;
+    private string errorMessage = string.Empty;
+    private bool showForm;
+    private bool loading = true;
+    private int? editingId;
+
+    private IEnumerable<TaskItem> FilteredTasks =>
+        tasks.Where(t =>
+            (statusFilter == "All" ||
+             (statusFilter == "Active" && !t.IsCompleted) ||
+             (statusFilter == "Completed" && t.IsCompleted)) &&
+            (priorityFilter == "All" || t.Priority == priorityFilter))
+        .OrderBy(t => t.IsCompleted)
+        .ThenBy(t => t.DueDate ?? DateTime.MaxValue)
+        .ThenBy(t => t.Title);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
+            userId = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                errorMessage = "Unable to identify your account. Please sign in again.";
+                return;
+            }
+
+            await LoadTasks();
+        }
+        catch (Exception)
+        {
+            errorMessage = "We couldn't load your tasks. Please refresh and try again.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task LoadTasks()
+    {
+        tasks = await Db.Tasks
+            .AsNoTracking()
+            .Where(t => t.UserId == userId)
+            .ToListAsync();
+    }
+
+    private void StartNewTask()
+    {
+        formModel = new TaskItem { Priority = "Medium" };
+        editingId = null;
+        showForm = true;
+        message = string.Empty;
+        errorMessage = string.Empty;
+    }
+
+    private void StartEdit(int id)
+    {
+        var task = tasks.FirstOrDefault(t => t.Id == id);
+
+        if (task is null)
+        {
+            return;
+        }
+
+        formModel = new TaskItem
+        {
+            Title = task.Title,
+            Description = task.Description,
+            Priority = task.Priority,
+            DueDate = task.DueDate,
+            IsCompleted = task.IsCompleted
+        };
+
+        editingId = id;
+        showForm = true;
+        message = string.Empty;
+        errorMessage = string.Empty;
+    }
+
+    private async Task SaveTask()
+    {
+        message = string.Empty;
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(formModel.Title))
+            {
+                errorMessage = "Please enter a task title.";
+                return;
+            }
+
+            if (formModel.Priority is not ("Low" or "Medium" or "High"))
+            {
+                errorMessage = "Please select a valid priority.";
+                return;
+            }
+
+            if (editingId.HasValue)
+            {
+                var existing = await Db.Tasks.FirstOrDefaultAsync(t =>
+                    t.Id == editingId.Value && t.UserId == userId);
+
+                if (existing is null)
+                {
+                    errorMessage = "That task could not be found.";
+                    return;
+                }
+
+                existing.Title = formModel.Title.Trim();
+                existing.Description = formModel.Description.Trim();
+                existing.Priority = formModel.Priority;
+                existing.DueDate = formModel.DueDate;
+            }
+            else
+            {
+                var newTask = new TaskItem
+                {
+                    Title = formModel.Title.Trim(),
+                    Description = formModel.Description.Trim(),
+                    Priority = formModel.Priority,
+                    DueDate = formModel.DueDate,
+                    IsCompleted = false,
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                Db.Tasks.Add(newTask);
+            }
+
+            await Db.SaveChangesAsync();
+            await LoadTasks();
+
+            showForm = false;
+            editingId = null;
+            message = "Your task was saved successfully.";
+        }
+        catch (Exception)
+        {
+            errorMessage = "We couldn't save your task. Please try again.";
+        }
+    }
+
+    private async Task ToggleComplete(int id, ChangeEventArgs args)
+    {
+        try
+        {
+            var task = await Db.Tasks.FirstOrDefaultAsync(t =>
+                t.Id == id && t.UserId == userId);
+
+            if (task is null)
+            {
+                errorMessage = "That task could not be found.";
+                return;
+            }
+
+            task.IsCompleted = args.Value is bool value && value;
+            await Db.SaveChangesAsync();
+            await LoadTasks();
+
+            message = task.IsCompleted
+                ? "Task marked as completed."
+                : "Task marked as in progress.";
+
+            errorMessage = string.Empty;
+        }
+        catch (Exception)
+        {
+            errorMessage = "We couldn't update the task. Please try again.";
+        }
+    }
+
+    private async Task DeleteTask(int id)
+    {
+        try
+        {
+            var task = await Db.Tasks.FirstOrDefaultAsync(t =>
+                t.Id == id && t.UserId == userId);
+
+            if (task is null)
+            {
+                errorMessage = "That task could not be found.";
+                return;
+            }
+
+            Db.Tasks.Remove(task);
+            await Db.SaveChangesAsync();
+            await LoadTasks();
+
+            message = "Task deleted successfully.";
+            errorMessage = string.Empty;
+        }
+        catch (Exception)
+        {
+            errorMessage = "We couldn't delete the task. Please try again.";
+        }
+    }
+
+    private void CancelForm()
+    {
+        showForm = false;
+        editingId = null;
+        formModel = new TaskItem();
+        errorMessage = string.Empty;
+    }
+}

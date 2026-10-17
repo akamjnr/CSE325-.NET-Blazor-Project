@@ -1,0 +1,326 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+
+<PageTitle>TaskTrack - Home</PageTitle>
+
+<div class="home-container">
+
+    <section class="welcome-section">
+        <div class="welcome-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+                <path d="m7 12 3 3 7-7"></path>
+            </svg>
+        </div>
+
+        <p class="eyebrow">YOUR DAY, ORGANISED</p>
+
+        <h1>Welcome to <span>TaskTrack</span></h1>
+
+        <p class="welcome-text">
+            Organise your day, manage your priorities, and keep track of your
+            tasks in one simple place.
+        </p>
+
+        <AuthorizeView>
+            <Authorized>
+                <a href="/tasks" class="home-button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9 6h11M9 12h11M9 18h11"></path>
+                        <path d="m3 6 1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"></path>
+                    </svg>
+                    Go to My Tasks
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M5 12h14M13 6l6 6-6 6"></path>
+                    </svg>
+                </a>
+            </Authorized>
+
+            <NotAuthorized>
+                <div class="home-buttons">
+                    <a href="/Account/Register" class="home-button">
+                        Get Started
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M5 12h14M13 6l6 6-6 6"></path>
+                        </svg>
+                    </a>
+
+                    <a href="/Account/Login" class="login-button">
+                        Sign In
+                    </a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </section>
+
+    <section class="features-section">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 6h11M9 12h11M9 18h11"></path>
+                    <path d="m3 6 1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"></path>
+                </svg>
+            </div>
+            <h3>Manage Tasks</h3>
+            <p>Create, edit, and organise your daily tasks in one place.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3 14.8 8.7 21 9.6 16.5 14l1.1 6.2L12 17.3 6.4 20.2 7.5 14 3 9.6l6.2-.9L12 3Z"></path>
+                </svg>
+            </div>
+            <h3>Set Priorities</h3>
+            <p>Set priorities and due dates to plan your work effectively.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 3v18h18"></path>
+                    <path d="m7 14 4-4 4 3 6-7"></path>
+                    <path d="M16 6h5v5"></path>
+                </svg>
+            </div>
+            <h3>Track Progress</h3>
+            <p>Mark tasks complete and see how you are progressing.</p>
+        </div>
+    </section>
+
+    <footer class="home-footer">
+        <span>© @DateTime.Now.Year TaskTrack by Anyway Kambeva | CSE325</span>
+        <span>Plan better. Do better.</span>
+    </footer>
+
+</div>
+
+<style>
+    .home-container {
+        max-width: 1050px;
+        margin: 0 auto;
+        padding: 45px 30px 25px;
+        color: #25233a;
+    }
+
+    .welcome-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 20px 15px 55px;
+    }
+
+    .welcome-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 68px;
+        height: 68px;
+        margin-bottom: 24px;
+        border-radius: 18px;
+        background: #7452df;
+        color: #ffffff;
+        box-shadow: 0 8px 20px rgba(116, 82, 223, 0.18);
+    }
+
+    .welcome-icon svg {
+        width: 34px;
+        height: 34px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .eyebrow {
+        margin: 0 0 12px;
+        color: #7452df;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 2px;
+    }
+
+    .welcome-section h1 {
+        margin: 0 0 18px;
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 800;
+        letter-spacing: -1.5px;
+    }
+
+    .welcome-section h1 span {
+        color: #7452df;
+    }
+
+    .welcome-text {
+        max-width: 560px;
+        margin: 0 0 28px;
+        color: #6f7082;
+        font-size: 16px;
+        line-height: 1.8;
+    }
+
+    .home-buttons {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .home-button,
+    .login-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 13px 22px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .home-button {
+        color: #ffffff;
+        background: #7452df;
+        box-shadow: 0 5px 14px rgba(116, 82, 223, 0.15);
+    }
+
+    .home-button:hover {
+        color: #ffffff;
+        background: #5e3ec4;
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+
+    .login-button {
+        color: #514080;
+        background: #ffffff;
+        border: 1px solid #ddd5f7;
+    }
+
+    .login-button:hover {
+        background: #f7f4ff;
+        text-decoration: none;
+    }
+
+    .home-button svg {
+        width: 19px;
+        height: 19px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .features-section {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+        padding: 30px 0 45px;
+        border-top: 1px solid #eae8f1;
+    }
+
+    .feature-card {
+        padding: 25px 20px;
+        background: #ffffff;
+        border: 1px solid #eae6f5;
+        border-radius: 15px;
+        text-align: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(37, 35, 58, 0.06);
+    }
+
+    .feature-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 16px;
+        border-radius: 13px;
+        background: #f0ebff;
+        color: #7452df;
+    }
+
+    .feature-icon svg {
+        width: 25px;
+        height: 25px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .feature-card h3 {
+        margin: 0 0 10px;
+        font-size: 16px;
+        font-weight: 750;
+    }
+
+    .feature-card p {
+        margin: 0;
+        color: #777b8d;
+        font-size: 13px;
+        line-height: 1.7;
+    }
+
+    .home-footer {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding-top: 22px;
+        border-top: 1px solid #eae8f1;
+        color: #88879a;
+        font-size: 13px;
+    }
+
+    @@media (max-width: 800px) {
+        .home-container {
+            padding: 30px 20px 20px;
+        }
+
+        .features-section {
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+
+        .feature-card {
+            padding: 22px;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .home-container {
+            padding: 20px 12px;
+        }
+
+        .welcome-section {
+            padding: 20px 5px 40px;
+        }
+
+        .welcome-section h1 {
+            font-size: 2rem;
+            letter-spacing: -0.8px;
+        }
+
+        .welcome-text {
+            font-size: 15px;
+        }
+
+        .home-footer {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            font-size: 12px;
+        }
+    }
+</style>
